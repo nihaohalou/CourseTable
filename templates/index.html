@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能课程表系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>智能课程表系统</h1>
+            <button class="btn btn-primary" onclick="openAddModal()">添加课程</button>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('schedule')">课程表</button>
+            <button class="tab-btn" onclick="showTab('statistics')">数据统计</button>
+            <button class="tab-btn" onclick="showTab('upcoming')">即将到来</button>
+        </div>
+
+        <div id="schedule-tab" class="tab-content active">
+            <div class="schedule-container">
+                <div class="schedule-header">
+                    <div class="time-column">时间</div>
+                    <div class="day-header">周一</div>
+                    <div class="day-header">周二</div>
+                    <div class="day-header">周三</div>
+                    <div class="day-header">周四</div>
+                    <div class="day-header">周五</div>
+                    <div class="day-header">周六</div>
+                    <div class="day-header">周日</div>
+                </div>
+                <div class="schedule-body" id="schedule-body">
+                    <!-- 课程表内容将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <div id="statistics-tab" class="tab-content">
+            <div class="statistics-container">
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-courses">0</div>
+                        <div class="stat-label">本周课程总数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-hours">0</div>
+                        <div class="stat-label">总学时（小时）</div>
+                    </div>
+                </div>
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <h3>课程时间占比</h3>
+                        <canvas id="timeChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h3>课程时间分布</h3>
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="upcoming-tab" class="tab-content">
+            <div class="upcoming-list" id="upcoming-list">
+                <!-- 即将到来的课程列表 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑课程模态框 -->
+    <div id="course-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">添加课程</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="course-form" onsubmit="saveCourse(event)">
+                <input type="hidden" id="course-id">
+                
+                <div class="form-group">
+                    <label for="course-name">课程名称 *</label>
+                    <input type="text" id="course-name" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="teacher">授课教师</label>
+                        <input type="text" id="teacher">
+                    </div>
+                    <div class="form-group">
+                        <label for="classroom">教室</label>
+                        <input type="text" id="classroom">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="day-of-week">星期 *</label>
+                        <select id="day-of-week" required>
+                            <option value="1">周一</option>
+                            <option value="2">周二</option>
+                            <option value="3">周三</option>
+                            <option value="4">周四</option>
+                            <option value="5">周五</option>
+                            <option value="6">周六</option>
+                            <option value="7">周日</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="week-range">周次范围</label>
+                        <input type="text" id="week-range" placeholder="如: 1-16周">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start-period">开始节次 *</label>
+                        <select id="start-period" required>
+                            <option value="">请选择</option>
+                            <option value="1">第1节 (08:00-08:45)</option>
+                            <option value="2">第2节 (08:55-09:40)</option>
+                            <option value="3">第3节 (10:10-10:55)</option>
+                            <option value="4">第4节 (11:05-11:50)</option>
+                            <option value="5">第5节 (14:00-14:45)</option>
+                            <option value="6">第6节 (14:55-15:40)</option>
+                            <option value="7">第7节 (16:10-16:55)</option>
+                            <option value="8">第8节 (17:05-17:50)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-period">结束节次 *</label>
+                        <select id="end-period" required>
+                            <option value="">请选择</option>
+                            <option value="1">第1节 (08:00-08:45)</option>
+                            <option value="2">第2节 (08:55-09:40)</option>
+                            <option value="3">第3节 (10:10-10:55)</option>
+                            <option value="4">第4节 (11:05-11:50)</option>
+                            <option value="5">第5节 (14:00-14:45)</option>
+                            <option value="6">第6节 (14:55-15:40)</option>
+                            <option value="7">第7节 (16:10-16:55)</option>
+                            <option value="8">第8节 (17:05-17:50)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="credit">学分</label>
+                    <input type="number" id="credit" step="0.5" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">备注</label>
+                    <textarea id="notes" rows="3"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="delete-btn" class="btn btn-danger" onclick="deleteCourse()" style="display: none;">删除</button>
+                    <div style="flex: 1;"></div>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+
